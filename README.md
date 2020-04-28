@@ -11,8 +11,14 @@ rigid body systems.
 ### Dynamics
 - Function usages
 - Inverse dynamics control
-### Misc
-- Computation time
+
+## Computation Efficiency
+Running [examples/computation_time.py](https://github.com/junhyeokahn/tf_rbdl/blob/master/examples/computation_time.py) evaluates inverse dynamics for 5 batches and 500 epochs.
+
+|     | Single Input w/ Autograph | Single Input w/o Autograph | Batch Input w/ Autograph | Batch Input w/o Autograph |
+|:---:|:-------------------------:|:--------------------------:|:------------------------:|:-------------------------:|
+| CPU |          3.67 (s)         |          78.03 (s)         |         1.68 (s)         |         14.39 (s)         |
+| GPU |          8.29 (s)         |         122.92 (s)         |         3.20 (s)         |         21.13 (s)         |
 
 ## Installation
 You can install `tf_rbd` from PyPI:
@@ -40,8 +46,11 @@ If you use this code please cite it as:
 }
 ```
 
+## Todo
+[] Write examples
+[] Parse urdf
 
 ## Acknowledgement
-This code is based on the book [Modern
+This library is based on the book [Modern
 Robotics](http://hades.mech.northwestern.edu/index.php/Modern_Robotics) and the
 [code](https://github.com/NxRLab/ModernRobotics).

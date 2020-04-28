@@ -739,9 +739,9 @@ def jac_space(Slist, thetalist):
         N x 6 x nv
     """
     N, nq = thetalist.shape
-    Js = None * nq
+    Js = [None] * nq
     for i in range(nq):
-        Js[i] = tf.tile(tf.expand_dims(S, axis=0), tf.constant([N,1]))
+        Js[i] = tf.tile(tf.expand_dims(Slist[i], axis=0), tf.constant([N,1]))
     T = tf.tile(tf.expand_dims(tf.eye(4), axis=0), tf.constant([N,1,1]))
     for i in range(1, nq):
         T = tf.matmul(T, se3_to_SE3(vec_to_se3(Slist[i-1] * tf.expand_dims(thetalist[:,i-1], axis=1))))
@@ -909,7 +909,7 @@ def ad(V):
         N x 6 x 6
     """
 
-    N = V.shape[0]
+    N = tf.shape(V)[0]
     omgmat = vec_to_so3(V[:,0:3])
     linmat = vec_to_so3(V[:,3:6])
     return tf.concat([tf.concat([omgmat, tf.zeros((N,3,3))], axis=2), tf.concat([linmat, omgmat], axis=2)], axis=1)
