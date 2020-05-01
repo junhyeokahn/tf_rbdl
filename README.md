@@ -1,3 +1,5 @@
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.3780707.svg)](https://doi.org/10.5281/zenodo.3780707)
+
 # tf_rbdl
 tf_rbdl is a python library that contains some essential rigid body dynamics
 algorithms such as forward dynamics and inverse dynamics using Tensorflow. It
