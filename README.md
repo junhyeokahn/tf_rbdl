@@ -38,7 +38,7 @@ $ pip install -e .
 ```
 @software{junhyeok_ahn_2020_3780707,
   author       = {Junhyeok Ahn},
-  title        = {{tf\_rbdl: Rigid body dynamics algorithms using 
+  title        = {{tf\_rbdl: Rigid Body Dynamics Library using 
                    Tensorflow}},
   month        = may,
   year         = 2020,
