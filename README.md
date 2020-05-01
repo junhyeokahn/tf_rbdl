@@ -34,7 +34,7 @@ $ cd tf_rbdl
 $ pip install -e .
 ```
 
-## Citations
+## Citation
 ```
 @software{junhyeok_ahn_2020_3780707,
   author       = {Junhyeok Ahn},
