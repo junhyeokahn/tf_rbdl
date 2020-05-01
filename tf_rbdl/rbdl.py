@@ -157,19 +157,6 @@ def so3_to_SO3(so3mat):
             return tf.eye(3) + tf.sin(theta) * omgmat + (1 - tf.cos(theta)) * tf.matmul(omgmat,omgmat)
 
 @tf.function
-def R_to_omg(R):
-    if not near_zero(1 + R[2][2]):
-        omg = tf.stack([R[0,2], R[1,2], 1+R[2,2]], axis=0)
-        omg = (1.0 / tf.sqrt(2 * (1 + R[2][2]))) * omg
-    elif not near_zero(1 + R[1][1]):
-        omg = tf.stack([R[0,1], 1+R[1,1], R[2,1]], axis=0)
-        omg = (1.0 / tf.sqrt(2 * (1 + R[1][1]))) * omg
-    else:
-        omg = tf.stack([1+R[0,0], R[1,0], R[2,0]], axis=0)
-        omg = (1.0 / tf.sqrt(2 * (1 + R[0][0]))) * omg
-    return omg
-
-@tf.function
 def SO3_to_so3(R):
     """
     Convert SO(3) to so(3)

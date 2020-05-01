@@ -38,7 +38,6 @@ Slist_ = [tf.constant([1, 0, 1,      0, 1,     0], tf.float32),
 th_ = tf.stack([th]*N, axis=0)
 dth_ = tf.stack([dth]*N, axis=0)
 ddth_ = tf.stack([ddth]*N, axis=0)
-merged_input_ = tf.concat([th_, dth_, ddth_], axis=1)
 Ftip_ = tf.stack([Ftip]*N, axis=0)
 
 tf_rbdl.id_space(tf.expand_dims(th,0), tf.expand_dims(dth,0), tf.expand_dims(ddth,0), g, tf.expand_dims(Ftip,0), Mlist_, Glist_, Slist_)

@@ -121,6 +121,47 @@ def angvel_to_axis_ang(expc3):
     return tf.linalg.normalize(expc3, axis=1)
 
 @tf.function
+def so3_to_SO3_(so3mat):
+    """
+    Convert so(3) to SO(3)
+
+    Parameters
+    ----------
+    so3mat (tf.Tensor):
+        so(3)
+        N x 3 x 3
+
+    Returns
+    ------
+    ret (tf.Tensor):
+        SO(3)
+        N x 3 x 3
+    """
+    omgtheta = so3_to_vec(so3mat)
+    c_1 = near_zero(tf.norm(omgtheta,axis=1))
+    c_2 = tf.math.logical_not(c_1)
+    b_1 = tf.cast(c_1, tf.int32)
+    b_2 = tf.cast(c_2, tf.int32)
+    idx_1 = tf.cast(tf.squeeze(tf.where(b_1), axis=1), tf.int32)
+    idx_2 = tf.cast(tf.squeeze(tf.where(b_2), axis=1), tf.int32)
+
+    partitions = b_1*0 + b_2*1
+    partitioned_inp = tf.dynamic_partition(so3mat, partitions, 2)
+    inp_1 = partitioned_inp[0]
+    inp_2 = partitioned_inp[1]
+
+    ret_1 = tf.tile( tf.expand_dims(tf.eye(3), axis=0), tf.stack([tf.shape(idx_1)[0], 1, 1], 0))
+
+    omgtheta_2 = so3_to_vec(inp_2)
+    theta_2 = tf.expand_dims(angvel_to_axis_ang(omgtheta_2)[1], axis=1)
+    omgmat_2 = inp_2 / theta_2
+    ret_2 = tf.eye(3) + tf.sin(theta_2) * omgmat_2 + (1 - tf.cos(theta_2)) * tf.matmul(omgmat_2,omgmat_2)
+
+    rets = [ret_1,ret_2]
+    ids = [idx_1,idx_2]
+    return tf.dynamic_stitch(ids,rets)
+
+@tf.function
 def so3_to_SO3(so3mat):
     """
     Convert so(3) to SO(3)
@@ -167,86 +208,6 @@ def so3_to_SO3(so3mat):
     return tf.case([(tf.math.equal(tf.shape(zero_idx)[0], 0), f1), (tf.math.equal(tf.shape(non_zero_idx)[0], 0), f2)], default=f3)
 
 @tf.function
-def R_to_omg_(R):
-    N = tf.shape(R)[0]
-    b_1 = tf.math.logical_not(near_zero(1 + R[:,2,2]))
-    b_2 = tf.math.logical_not(near_zero(1 + R[:,1,1]))
-    idx_1 = tf.cast(tf.squeeze(tf.where(b_1), axis=1), tf.int32)
-    idx_2 = tf.cast(tf.squeeze(tf.where(tf.math.logical_and(tf.math.logical_not(b_1), b_2)), axis=1), tf.int32)
-    idx_3 = tf.cast(tf.squeeze(tf.where(tf.math.logical_not(tf.math.logical_or(b_1, b_2))), axis=1), tf.int32)
-
-    def g1():
-        omg = tf.expand_dims((1.0 / tf.sqrt(2 * (1 + R[:,2,2]))), axis=1) * tf.stack([R[:,0,2], R[:,1,2], 1+R[:,2,2]], axis=1)
-        return omg
-    def g2():
-        omg = tf.expand_dims((1.0 / tf.sqrt(2 * (1 + R[:,1,1]))), axis=1) * tf.stack([R[:,0,1], 1+R[:,1,1], R[:,2,1]], axis=1)
-        return omg
-    def g3():
-        omg = tf.expand_dims((1.0 / tf.sqrt(2 * (1 + R[:,0,0]))), axis=1) * tf.stack([1+R[:,0,0], R[:,1,0], R[:,2,0]], axis=1)
-        return omg
-    def g12():
-        R_1 = tf.gather(R, idx_1)
-        omg_1 = tf.expand_dims((1.0 / tf.sqrt(2 * (1 + R_1[:,2,2]))), axis=1) * tf.stack([R_1[:,0,2], R_1[:,1,2], 1+R_1[:,2,2]], axis=1)
-        omg_1 = tf.scatter_nd(tf.expand_dims(idx_1, axis=1), omg_1, tf.stack([N, 3]))
-
-        R_2 = tf.gather(R, idx_2)
-        omg_2 = tf.expand_dims((1.0 / tf.sqrt(2 * (1 + R_2[:,1,1]))), axis=1) * tf.stack([R_2[:,0,1], 1+R_2[:,1,1], R_2[:,2,1]], axis=1)
-        omg_2 = tf.scatter_nd(tf.expand_dims(idx_2, axis=1), omg_2, tf.stack([N, 3]))
-
-        return omg_1 + omg_2
-    def g13():
-        R_1 = tf.gather(R, idx_1)
-        omg_1 = tf.expand_dims((1.0 / tf.sqrt(2 * (1 + R_1[:,2,2]))), axis=1) * tf.stack([R_1[:,0,2], R_1[:,1,2], 1+R_1[:,2,2]], axis=1)
-        omg_1 = tf.scatter_nd(tf.expand_dims(idx_1, axis=1), omg_1, tf.stack([N, 3]))
-
-        R_3 = tf.gather(R, idx_3)
-        omg_3 = tf.expand_dims((1.0 / tf.sqrt(2 * (1 + R_3[:,0,0]))), axis=1) * tf.stack([1+R_3[:,0,0], R_3[:,1,0], R_3[:,2,0]], axis=1)
-        omg_3 = tf.scatter_nd(tf.expand_dims(idx_3, axis=1), omg_3, tf.stack([N, 3]))
-
-        return omg_1 + omg_3
-    def g23():
-        R_2 = tf.gather(R, idx_2)
-        omg_2 = tf.expand_dims((1.0 / tf.sqrt(2 * (1 + R_2[:,1,1]))), axis=1) * tf.stack([R_2[:,0,1], 1+R_2[:,1,1], R_2[:,2,1]], axis=1)
-        omg_2 = tf.scatter_nd(tf.expand_dims(idx_2, axis=1), omg_2, tf.stack([N, 3]))
-
-        R_3 = tf.gather(R, idx_3)
-        omg_3 = tf.expand_dims((1.0 / tf.sqrt(2 * (1 + R_3[:,0,0]))), axis=1) * tf.stack([1+R_3[:,0,0], R_3[:,1,0], R_3[:,2,0]], axis=1)
-        omg_3 = tf.scatter_nd(tf.expand_dims(idx_3, axis=1), omg_3, tf.stack([N, 3]))
-
-        return omg_2 + omg_3
-    def g123():
-        R_1 = tf.gather(R, idx_1)
-        omg_1 = tf.expand_dims((1.0 / tf.sqrt(2 * (1 + R_1[:,2,2]))), axis=1) * tf.stack([R_1[:,0,2], R_1[:,1,2], 1+R_1[:,2,2]], axis=1)
-        omg_1 = tf.scatter_nd(tf.expand_dims(idx_1, axis=1), omg_1, tf.stack([N, 3]))
-
-        R_2 = tf.gather(R, idx_2)
-        omg_2 = tf.expand_dims((1.0 / tf.sqrt(2 * (1 + R_2[:,1,1]))), axis=1) * tf.stack([R_2[:,0,1], 1+R_2[:,1,1], R_2[:,2,1]], axis=1)
-        omg_2 = tf.scatter_nd(tf.expand_dims(idx_2, axis=1), omg_2, tf.stack([N, 3]))
-
-        R_3 = tf.gather(R, idx_3)
-        omg_3 = tf.expand_dims((1.0 / tf.sqrt(2 * (1 + R_3[:,0,0]))), axis=1) * tf.stack([1+R_3[:,0,0], R_3[:,1,0], R_3[:,2,0]], axis=1)
-        omg_3 = tf.scatter_nd(tf.expand_dims(idx_3, axis=1), omg_3, tf.stack([N, 3]))
-
-        return omg_1 + omg_2 + omg_3
-
-    no_idx_1 = tf.math.equal(tf.shape(idx_1)[0], 0)
-    yes_idx_1 = tf.math.logical_not(no_idx_1)
-    no_idx_2 = tf.math.equal(tf.shape(idx_2)[0], 0)
-    yes_idx_2 = tf.math.logical_not(no_idx_2)
-    no_idx_3 = tf.math.equal(tf.shape(idx_3)[0], 0)
-    yes_idx_3 = tf.math.logical_not(no_idx_3)
-
-    pred_fn_1 = tf.math.logical_and(tf.math.logical_and((yes_idx_1), (no_idx_2)), (no_idx_3))
-    pred_fn_2 = tf.math.logical_and(tf.math.logical_and((no_idx_1), (yes_idx_2)), (no_idx_3))
-    pred_fn_3 = tf.math.logical_and(tf.math.logical_and((no_idx_1), (no_idx_2)), (yes_idx_3))
-    pred_fn_12 = tf.math.logical_and(tf.math.logical_and((yes_idx_1), (yes_idx_2)), (no_idx_3))
-    pred_fn_13 = tf.math.logical_and(tf.math.logical_and((yes_idx_1), (no_idx_2)), (yes_idx_3))
-    pred_fn_23 = tf.math.logical_and(tf.math.logical_and((no_idx_1), (yes_idx_2)), (yes_idx_3))
-    pred_fn_123 = tf.math.logical_and(tf.math.logical_and((yes_idx_1), (yes_idx_2)), (yes_idx_3))
-
-    return tf.case([(pred_fn_1, g1), (pred_fn_2, g2), (pred_fn_3, g3), (pred_fn_12, g12), (pred_fn_13, g13), (pred_fn_23, g23), (pred_fn_123, g123)])
-
-@tf.function
 def SO3_to_so3(R):
     """
     Convert SO(3) to so(3)
@@ -263,97 +224,48 @@ def SO3_to_so3(R):
         so(3)
         N x 3 x 3
     """
-
-    N = tf.shape(R)[0]
-    b_1 = near_zero(tf.norm(R - tf.eye(3), axis=[-2,-1]))
-    b_2 = near_zero(tf.linalg.trace(R) + 1)
+    c_1 = near_zero(tf.norm(R - tf.eye(3), axis=[-2,-1]))
+    c_2 = tf.math.logical_and(tf.math.logical_not(c_1), near_zero(tf.linalg.trace(R) + 1))
+    c_21 = tf.math.logical_and(c_2, tf.math.logical_not(near_zero(1 + R[:,2,2])))
+    c_22 = tf.math.logical_and(tf.math.logical_and(c_2, near_zero(1+R[:,2,2])), tf.math.logical_not(near_zero(1 + R[:,1,1])))
+    c_23 = tf.math.logical_and(tf.math.logical_and(c_2, near_zero(1+R[:,2,2])), near_zero(1+R[:,1,1]))
+    c_3 = tf.math.logical_and(tf.math.logical_not(c_1), tf.math.logical_not(c_2))
+    b_1 = tf.cast((c_1), tf.int32)
+    b_21 = tf.cast((c_21), tf.int32)
+    b_22 = tf.cast((c_22), tf.int32)
+    b_23 = tf.cast((c_23), tf.int32)
+    b_3 = tf.cast((c_3), tf.int32)
     idx_1 = tf.cast(tf.squeeze(tf.where(b_1), axis=1), tf.int32)
-    idx_2 = tf.cast(tf.squeeze(tf.where(b_2), axis=1), tf.int32)
-    idx_3 = tf.cast(tf.squeeze(tf.where(tf.math.logical_not(tf.math.logical_or(b_1, b_2))), axis=1), tf.int32)
+    idx_21 = tf.cast(tf.squeeze(tf.where(b_21), axis=1), tf.int32)
+    idx_22 = tf.cast(tf.squeeze(tf.where(b_22), axis=1), tf.int32)
+    idx_23 = tf.cast(tf.squeeze(tf.where(b_23), axis=1), tf.int32)
+    idx_3 = tf.cast(tf.squeeze(tf.where(b_3), axis=1), tf.int32)
 
-    def f1():
-        return tf.zeros((N, 3, 3))
-    def f2():
-        omg = R_to_omg_(R)
-        return vec_to_so3(np.pi*omg)
-    def f3():
-        acosinput = (tf.linalg.trace(R) - 1) / 2.0
-        acosinput = tf.clip_by_value(acosinput, clip_value_min=-1., clip_value_max=1.)
-        theta = tf.math.acos(acosinput)
-        return tf.expand_dims(tf.expand_dims(theta / 2.0 / tf.sin(theta), axis=1), axis=1) * (R - tf.transpose(R, perm=[0,2,1]))
-    def f12():
-        R_1 = tf.gather(R, idx_1)
-        out_1 = tf.zeros((tf.shape(idx_1)[0], 3, 3))
-        out_1 = tf.scatter_nd(tf.expand_dims(idx_1, axis=1), out_1, tf.stack([N, 3, 3]))
+    partitions = b_1*0 + b_21*1 + b_22*2 + b_23*3 + b_3*4
+    partitioned_R = tf.dynamic_partition(R, partitions, 5)
+    R_1 = partitioned_R[0]
+    R_21 = partitioned_R[1]
+    R_22 = partitioned_R[2]
+    R_23 = partitioned_R[3]
+    R_3 = partitioned_R[4]
 
-        R_2 = tf.gather(R, idx_2)
-        omg_2 = R_to_omg_(R_2)
-        out_2 = vec_to_so3(np.pi*omg_2)
-        out_2 = tf.scatter_nd(tf.expand_dims(idx_2, axis=1), out_2, tf.stack([N, 3, 3]))
+    ret_1 = tf.zeros((tf.shape(R_1)[0], 3, 3))
 
-        return out_1 + out_2
-    def f13():
-        R_1 = tf.gather(R, idx_1)
-        out_1 = tf.zeros((tf.shape(idx_1)[0], 3, 3))
-        out_1 = tf.scatter_nd(tf.expand_dims(idx_1, axis=1), out_1, tf.stack([N, 3, 3]))
+    omg_21 = tf.expand_dims((1.0 / tf.sqrt(2 * (1 + R_21[:,2,2]))), axis=1) * tf.stack([R_21[:,0,2], R_21[:,1,2], 1+R_21[:,2,2]], axis=1)
+    ret_21 = vec_to_so3(np.pi*omg_21)
+    omg_22 = tf.expand_dims((1.0 / tf.sqrt(2 * (1 + R_22[:,1,1]))), axis=1) * tf.stack([R_22[:,0,1], 1+R_22[:,1,1], R_22[:,2,1]], axis=1)
+    ret_22 = vec_to_so3(np.pi*omg_22)
+    omg_23 = tf.expand_dims((1.0 / tf.sqrt(2 * (1 + R_23[:,0,0]))), axis=1) * tf.stack([1+R_23[:,0,0], R_23[:,1,0], R_23[:,2,0]], axis=1)
+    ret_23 = vec_to_so3(np.pi*omg_23)
 
-        R_3 = tf.gather(R, idx_3)
-        acosinput = (tf.linalg.trace(R_3) - 1) / 2.0
-        acosinput = tf.clip_by_value(acosinput, clip_value_min=-1., clip_value_max=1.)
-        theta = tf.math.acos(acosinput)
-        out_3 = tf.expand_dims(tf.expand_dims(theta / 2.0 / tf.sin(theta), axis=1), axis=1) * (R_3 - tf.transpose(R_3, perm=[0,2,1]))
-        out_3 = tf.scatter_nd(tf.expand_dims(idx_3, axis=1), out_3, tf.stack([N, 3, 3]))
+    acosinput = (tf.linalg.trace(R_3) - 1) / 2.0
+    acosinput = tf.clip_by_value(acosinput, clip_value_min=-1., clip_value_max=1.)
+    theta = tf.math.acos(acosinput)
+    ret_3 = tf.expand_dims(tf.expand_dims(theta / 2.0 / tf.sin(theta), axis=1), axis=1) * (R_3 - tf.transpose(R_3, perm=[0,2,1]))
 
-        return out_1 + out_3
-    def f23():
-        R_2 = tf.gather(R, idx_2)
-        omg_2 = R_to_omg_(R_2)
-        out_2 = vec_to_so3(np.pi*omg_2)
-        out_2 = tf.scatter_nd(tf.expand_dims(idx_2, axis=1), out_2, tf.stack([N, 3, 3]))
-
-        R_3 = tf.gather(R, idx_3)
-        acosinput = (tf.linalg.trace(R_3) - 1) / 2.0
-        acosinput = tf.clip_by_value(acosinput, clip_value_min=-1., clip_value_max=1.)
-        theta = tf.math.acos(acosinput)
-        out_3 = tf.expand_dims(tf.expand_dims(theta / 2.0 / tf.sin(theta), axis=1), axis=1) * (R_3 - tf.transpose(R_3, perm=[0,2,1]))
-        out_3 = tf.scatter_nd(tf.expand_dims(idx_3, axis=1), out_3, tf.stack([N, 3, 3]))
-
-        return out_2 + out_3
-    def f123():
-        R_1 = tf.gather(R, idx_1)
-        out_1 = tf.zeros((tf.shape(idx_1)[0], 3, 3))
-        out_1 = tf.scatter_nd(tf.expand_dims(idx_1, axis=1), out_1, tf.stack([N, 3, 3]))
-
-        R_2 = tf.gather(R, idx_2)
-        omg_2 = R_to_omg_(R_2)
-        out_2 = vec_to_so3(np.pi*omg_2)
-        out_2 = tf.scatter_nd(tf.expand_dims(idx_2, axis=1), out_2, tf.stack([N, 3, 3]))
-
-        R_3 = tf.gather(R, idx_3)
-        acosinput = (tf.linalg.trace(R_3) - 1) / 2.0
-        acosinput = tf.clip_by_value(acosinput, clip_value_min=-1., clip_value_max=1.)
-        theta = tf.math.acos(acosinput)
-        out_3 = tf.expand_dims(tf.expand_dims(theta / 2.0 / tf.sin(theta), axis=1), axis=1) * (R_3 - tf.transpose(R_3, perm=[0,2,1]))
-        out_3 = tf.scatter_nd(tf.expand_dims(idx_3, axis=1), out_3, tf.stack([N, 3, 3]))
-
-        return out_1 + out_2 + out_3
-
-    no_idx_1 = tf.math.equal(tf.shape(idx_1)[0], 0)
-    yes_idx_1 = tf.math.logical_not(no_idx_1)
-    no_idx_2 = tf.math.equal(tf.shape(idx_2)[0], 0)
-    yes_idx_2 = tf.math.logical_not(no_idx_2)
-    no_idx_3 = tf.math.equal(tf.shape(idx_3)[0], 0)
-    yes_idx_3 = tf.math.logical_not(no_idx_3)
-
-    pred_fn_1 = tf.math.logical_and(tf.math.logical_and((yes_idx_1), (no_idx_2)), (no_idx_3))
-    pred_fn_2 = tf.math.logical_and(tf.math.logical_and((no_idx_1), (yes_idx_2)), (no_idx_3))
-    pred_fn_3 = tf.math.logical_and(tf.math.logical_and((no_idx_1), (no_idx_2)), (yes_idx_3))
-    pred_fn_12 = tf.math.logical_and(tf.math.logical_and((yes_idx_1), (yes_idx_2)), (no_idx_3))
-    pred_fn_13 = tf.math.logical_and(tf.math.logical_and((yes_idx_1), (no_idx_2)), (yes_idx_3))
-    pred_fn_23 = tf.math.logical_and(tf.math.logical_and((no_idx_1), (yes_idx_2)), (yes_idx_3))
-    pred_fn_123 = tf.math.logical_and(tf.math.logical_and((yes_idx_1), (yes_idx_2)), (yes_idx_3))
-
-    return tf.case([(pred_fn_1, f1), (pred_fn_2, f2), (pred_fn_3, f3), (pred_fn_12, f12), (pred_fn_13, f13), (pred_fn_23, f23), (pred_fn_123, f123)])
+    rets = [ret_1,ret_21,ret_22,ret_23,ret_3]
+    ids = [idx_1,idx_21,idx_22,idx_23,idx_3]
+    return tf.dynamic_stitch(ids,rets)
 
 @tf.function
 def Rp_to_SE3(R,p):
@@ -505,55 +417,35 @@ def se3_to_SE3(se3mat):
         SE(3)
         N x 3 x 3
     """
-    N = tf.shape(se3mat)[0]
     omgtheta = so3_to_vec(se3mat[:,0:3,0:3])
-    b_1 = near_zero(tf.norm(omgtheta, axis=1))
-    b_2 = tf.math.logical_not(b_1)
+    c_1 = near_zero(tf.norm(omgtheta, axis=1))
+    c_2 = tf.math.logical_not(c_1)
+    b_1 = tf.cast(c_1, tf.int32)
+    b_2 = tf.cast(c_2, tf.int32)
     idx_1 = tf.cast(tf.squeeze(tf.where(b_1), axis=1), tf.int32)
     idx_2 = tf.cast(tf.squeeze(tf.where(b_2), axis=1), tf.int32)
 
-    def f1():
-        return Rp_to_SE3( tf.tile(tf.expand_dims(tf.eye(3), axis=0), tf.stack([N, 1, 1])), se3mat[:,0:3,3] )
-    def f2():
-        theta = angvel_to_axis_ang(omgtheta)[1]
-        omgmat = se3mat[:,0:3,0:3] / tf.expand_dims(theta, axis=1)
-        R = so3_to_SO3(se3mat[:,0:3,0:3])
-        a = tf.tile(tf.expand_dims(tf.eye(3), axis=0), tf.stack([N, 1, 1])) * tf.expand_dims(theta, axis=1)
-        b = tf.expand_dims((1-tf.cos(theta)), axis=1) * omgmat
-        c = tf.expand_dims(theta - tf.sin(theta), axis=1) * tf.matmul(omgmat,omgmat)
-        d = a+b+c
-        p = tf.squeeze(tf.matmul(d, tf.expand_dims(se3mat[:,0:3,3], axis=2)) / tf.expand_dims(theta, axis=1), axis=2)
-        return Rp_to_SE3(R, p)
-    def f12():
-        se3_1 = tf.gather(se3mat, idx_1)
-        out_1 = Rp_to_SE3( tf.tile(tf.expand_dims(tf.eye(3), axis=0), tf.stack([tf.shape(se3_1)[0], 1, 1])), se3_1[:,0:3,3] )
-        out_1 = tf.scatter_nd(tf.expand_dims(idx_1, axis=1), out_1, tf.stack([N, 4, 4]))
+    partitions = b_1*0 + b_2*1
+    partitioned_inp = tf.dynamic_partition(se3mat, partitions, 2)
+    inp_1 = partitioned_inp[0]
+    inp_2 = partitioned_inp[1]
 
-        se3_2 = tf.gather(se3mat, idx_2)
-        omgtheta_2 = tf.gather(omgtheta, idx_2)
-        theta = angvel_to_axis_ang(omgtheta_2)[1]
-        omgmat = se3_2[:,0:3,0:3] / tf.expand_dims(theta, axis=1)
-        R = so3_to_SO3(se3_2[:,0:3,0:3])
-        a = tf.tile(tf.expand_dims(tf.eye(3), axis=0), tf.stack([tf.shape(se3_2)[0], 1, 1])) * tf.expand_dims(theta, axis=1)
-        b = tf.expand_dims((1-tf.cos(theta)), axis=1) * omgmat
-        c = tf.expand_dims(theta - tf.sin(theta), axis=1) * tf.matmul(omgmat,omgmat)
-        d = a+b+c
-        p = tf.squeeze(tf.matmul(d, tf.expand_dims(se3_2[:,0:3,3], axis=2)) / tf.expand_dims(theta, axis=1), axis=2)
-        out_2 = Rp_to_SE3(R, p)
-        out_2 = tf.scatter_nd(tf.expand_dims(idx_2, axis=1), out_2, tf.stack([N, 4, 4]))
+    ret_1 = Rp_to_SE3( tf.tile(tf.expand_dims(tf.eye(3), axis=0), tf.stack([tf.shape(idx_1)[0], 1, 1])), inp_1[:,0:3,3] )
 
-        return out_1 + out_2
+    omgtheta_2 = so3_to_vec(inp_2)
+    theta_2 = angvel_to_axis_ang(omgtheta_2)[1]
+    omgmat_2 = inp_2[:,0:3,0:3] / tf.expand_dims(theta_2, axis=1)
+    R_2 = so3_to_SO3(inp_2[:,0:3,0:3])
+    a_2 = tf.tile(tf.expand_dims(tf.eye(3), axis=0), tf.stack([tf.shape(inp_2)[0], 1, 1])) * tf.expand_dims(theta_2, axis=1)
+    b_2 = tf.expand_dims((1-tf.cos(theta_2)), axis=1) * omgmat_2
+    c_2 = tf.expand_dims(theta_2 - tf.sin(theta_2), axis=1) * tf.matmul(omgmat_2,omgmat_2)
+    d_2 = a_2+b_2+c_2
+    p_2 = tf.squeeze(tf.matmul(d_2, tf.expand_dims(inp_2[:,0:3,3], axis=2)) / tf.expand_dims(theta_2, axis=1), axis=2)
+    ret_2 = Rp_to_SE3(R_2, p_2)
 
-    no_idx_1 = tf.math.equal(tf.shape(idx_1)[0], 0)
-    yes_idx_1 = tf.math.logical_not(no_idx_1)
-    no_idx_2 = tf.math.equal(tf.shape(idx_2)[0], 0)
-    yes_idx_2 = tf.math.logical_not(no_idx_2)
-
-    pred_fn_1 = tf.math.logical_and((yes_idx_1), (no_idx_2))
-    pred_fn_2 = tf.math.logical_and((no_idx_1), (yes_idx_2))
-    pred_fn_12 = tf.math.logical_and((yes_idx_1), (yes_idx_2))
-
-    return tf.case([(pred_fn_1, f1), (pred_fn_2, f2), (pred_fn_12, f12)])
+    rets = [ret_1,ret_2]
+    ids = [idx_1,idx_2]
+    return tf.dynamic_stitch(ids,rets)
 
 @tf.function
 def SE3_to_se3(T):
@@ -572,60 +464,38 @@ def SE3_to_se3(T):
         se(3)
         N x 4 x 4
     """
-    N = tf.shape(T)[0]
-    R,p = SE3_to_Rp(T)
-    b_1 = near_zero(tf.norm(R - tf.eye(3), axis=[-2,-1]))
-    b_2 = tf.math.logical_not(b_1)
+    R, p = SE3_to_Rp(T)
+    c_1 = near_zero(tf.norm(R - tf.eye(3), axis=[-2,-1]))
+    c_2 = tf.math.logical_not(c_1)
+    b_1 = tf.cast(c_1, tf.int32)
+    b_2 = tf.cast(c_2, tf.int32)
     idx_1 = tf.cast(tf.squeeze(tf.where(b_1), axis=1), tf.int32)
     idx_2 = tf.cast(tf.squeeze(tf.where(b_2), axis=1), tf.int32)
 
-    def f1():
-        first_three_row = tf.concat([tf.zeros((N,3,3)), tf.expand_dims(T[:,0:3,3], axis=2)], axis=2)
-        last_row = tf.tile(tf.constant([[[0.,0.,0.,0.]]], tf.float32), tf.stack([N, 1, 1]))
+    partitions = b_1*0 + b_2*1
+    partitioned_T = tf.dynamic_partition(T, partitions, 2)
+    partitioned_R = tf.dynamic_partition(R, partitions, 2)
+    T_1 = partitioned_T[0]
+    R_1 = partitioned_R[0]
+    T_2 = partitioned_T[1]
+    R_2 = partitioned_R[1]
 
-        return tf.concat([first_three_row, last_row], axis=1)
-    def f2():
-        acosinput = (tf.linalg.trace(R) - 1) / 2.0
-        acosinput = tf.clip_by_value(acosinput, clip_value_min=-1., clip_value_max=1.)
-        theta = tf.math.acos(acosinput)
-        omgmat = SO3_to_so3(R)
-        a = tf.eye(3) - omgmat/2.0
-        b = tf.expand_dims(tf.expand_dims((1.0/theta - 1.0/tf.tan(theta/2.0)/2.0)/theta, axis=1), axis=1) * tf.matmul(omgmat, omgmat)
-        c = tf.matmul(a+b, tf.expand_dims(T[:,0:3,3], axis=2))
+    first_three_row = tf.concat([tf.zeros((tf.shape(idx_1)[0],3,3)), tf.expand_dims(T_1[:,0:3,3], axis=2)], axis=2)
+    last_row = tf.tile(tf.constant([[[0.,0.,0.,0.]]], tf.float32), tf.stack([tf.shape(idx_1)[0], 1, 1]))
+    ret_1 = tf.concat([first_three_row, last_row], axis=1)
 
-        return tf.concat([tf.concat([omgmat, c], axis=2), tf.tile(tf.constant([[[0., 0., 0., 0.]]], tf.float32), tf.stack([N,1,1]))], axis=1)
-    def f12():
-        T_1 = tf.gather(T, idx_1)
-        first_three_row = tf.concat([tf.zeros((tf.shape(idx_1)[0],3,3)), tf.expand_dims(T_1[:,0:3,3], axis=2)], axis=2)
-        last_row = tf.tile(tf.constant([[[0.,0.,0.,0.]]], tf.float32), tf.stack([tf.shape(idx_1)[0], 1, 1]))
-        out_1 = tf.concat([first_three_row, last_row], axis=1)
-        out_1 = tf.scatter_nd(tf.expand_dims(idx_1, axis=1), out_1, tf.stack([N, 4, 4]))
+    acosinput = (tf.linalg.trace(R_2) - 1) / 2.0
+    acosinput = tf.clip_by_value(acosinput, clip_value_min=-1., clip_value_max=1.)
+    theta = tf.math.acos(acosinput)
+    omgmat = SO3_to_so3(R_2)
+    a = tf.eye(3) - omgmat/2.0
+    b = tf.expand_dims(tf.expand_dims((1.0/theta - 1.0/tf.tan(theta/2.0)/2.0)/theta, axis=1), axis=1) * tf.matmul(omgmat, omgmat)
+    c = tf.matmul(a+b, tf.expand_dims(T_2[:,0:3,3], axis=2))
+    ret_2 = tf.concat([tf.concat([omgmat, c], axis=2), tf.tile(tf.constant([[[0., 0., 0., 0.]]], tf.float32), tf.stack([tf.shape(idx_2)[0],1,1]))], axis=1)
 
-        T_2 = tf.gather(T, idx_2)
-        R_2 = tf.gather(R, idx_2)
-        acosinput = (tf.linalg.trace(R_2) - 1) / 2.0
-        acosinput = tf.clip_by_value(acosinput, clip_value_min=-1., clip_value_max=1.)
-        theta = tf.math.acos(acosinput)
-        omgmat = SO3_to_so3(R_2)
-        a = tf.eye(3) - omgmat/2.0
-        b = tf.expand_dims(tf.expand_dims((1.0/theta - 1.0/tf.tan(theta/2.0)/2.0)/theta, axis=1), axis=1) * tf.matmul(omgmat, omgmat)
-        c = tf.matmul(a+b, tf.expand_dims(T_2[:,0:3,3], axis=2))
-        out_2 = tf.concat([tf.concat([omgmat, c], axis=2), tf.tile(tf.constant([[[0., 0., 0., 0.]]], tf.float32), tf.stack([tf.shape(idx_2)[0],1,1]))], axis=1)
-        out_2 = tf.scatter_nd(tf.expand_dims(idx_2, axis=1), out_2, tf.stack([N, 4, 4]))
-
-        return out_1 + out_2
-
-
-    no_idx_1 = tf.math.equal(tf.shape(idx_1)[0], 0)
-    yes_idx_1 = tf.math.logical_not(no_idx_1)
-    no_idx_2 = tf.math.equal(tf.shape(idx_2)[0], 0)
-    yes_idx_2 = tf.math.logical_not(no_idx_2)
-
-    pred_fn_1 = tf.math.logical_and((yes_idx_1), (no_idx_2))
-    pred_fn_2 = tf.math.logical_and((no_idx_1), (yes_idx_2))
-    pred_fn_12 = tf.math.logical_and((yes_idx_1), (yes_idx_2))
-
-    return tf.case([(pred_fn_1, f1), (pred_fn_2, f2), (pred_fn_12, f12)])
+    rets = [ret_1,ret_2]
+    ids = [idx_1,idx_2]
+    return tf.dynamic_stitch(ids,rets)
 
 @tf.function
 def fk_body(M, Blist, thetalist):
