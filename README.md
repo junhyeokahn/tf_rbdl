@@ -34,6 +34,21 @@ $ cd tf_rbdl
 $ pip install -e .
 ```
 
+## Citations
+```
+@software{junhyeok_ahn_2020_3780707,
+  author       = {Junhyeok Ahn},
+  title        = {{tf\_rbdl: Rigid body dynamics algorithms using 
+                   Tensorflow}},
+  month        = may,
+  year         = 2020,
+  publisher    = {Zenodo},
+  version      = {v0.1.0},
+  doi          = {10.5281/zenodo.3780707},
+  url          = {https://doi.org/10.5281/zenodo.3780707}
+}
+```
+
 ## Todo
 - [ ] Write examples
 - [ ] Parse urdf
