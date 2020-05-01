@@ -35,8 +35,8 @@ $ pip install -e .
 ```
 
 ## Todo
-[] Write examples
-[] Parse urdf
+- [ ] Write examples
+- [ ] Parse urdf
 
 ## Acknowledgement
 This library is based on the book [Modern
