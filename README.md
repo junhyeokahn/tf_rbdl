@@ -38,7 +38,7 @@ $ pip install -e .
 
 ## Citation
 ```
-@software{junhyeok_ahn_2020_3780707,
+@misc{junhyeok_ahn_2020_3780707,
   author       = {Junhyeok Ahn},
   title        = {{tf\_rbdl: Rigid Body Dynamics Library using 
                    Tensorflow}},
