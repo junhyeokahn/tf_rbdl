@@ -25,7 +25,7 @@ Running [examples/computation_time.py](https://github.com/junhyeokahn/tf_rbdl/bl
 | GPU |          8.53 (s)         |          89.75 (s)         |         2.46 (s)         |         18.27 (s)         |
 
 ## Installation
-You can install `tf_rbd` from PyPI:
+You can install `tf_rbdl` from PyPI:
 ```bash
 $ pip install tf_rbdl
 ```
