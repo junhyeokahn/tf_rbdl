@@ -8,21 +8,7 @@ rigid body systems.
 
 ## Examples
 ### General Usages
-- APIs: [examples/general_usage.py](https://github.com/junhyeokahn/tf_rbdl/blob/master/examples/computation_time.py)
-### Kinematics
-- Function usages
-- Inverse kinematics control
-### Dynamics
-- Function usages
-- Inverse dynamics control
-
-## Computation Efficiency
-Running [examples/computation_time.py](https://github.com/junhyeokahn/tf_rbdl/blob/master/examples/computation_time.py) evaluates inverse dynamics for 5 batches and 500 epochs.
-
-|     | Single Input w/ Autograph | Single Input w/o Autograph | Batch Input w/ Autograph | Batch Input w/o Autograph |
-|:---:|:-------------------------:|:--------------------------:|:------------------------:|:-------------------------:|
-| CPU |          3.82 (s)         |          71.68 (s)         |         0.95 (s)         |         13.02 (s)         |
-| GPU |          8.53 (s)         |          89.75 (s)         |         2.46 (s)         |         18.27 (s)         |
+- See [examples/general_usage.py](https://github.com/junhyeokahn/tf_rbdl/blob/master/examples/general_usage.py) for details.
 
 ## Installation
 You can install `tf_rbdl` from PyPI:

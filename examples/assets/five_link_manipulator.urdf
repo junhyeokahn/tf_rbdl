@@ -1,0 +1,167 @@
+<robot name="2link_robot">
+
+	<material name="black">
+		<color rgba="0 0 0 0.7"/>
+	</material>
+	<material name="white">
+		<color rgba="1 1 1 0.7"/>
+	</material>
+
+	<link name="b0">
+        <inertial>
+            <mass value="0"/>
+            <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0"/>
+        </inertial>
+	</link>
+
+	<link name="b1">
+        <inertial>
+            <origin rpy="0 0 0" xyz="0.5 0 0"/>
+            <mass value="1"/>
+            <inertia ixx="1" ixy="0" ixz="0" iyy="2" iyz="0" izz="3"/>
+        </inertial>
+		<visual>
+			<origin rpy="0 0 0" xyz="0.5 0 0"/>
+			<geometry>
+				<box size="1 0.1 0.1"/>
+			</geometry>
+			<material name="black"/>
+		</visual>
+	</link>
+
+	<joint name="j1" type="continuous">
+		<origin rpy="0 0 0" xyz="0 0 0"/>
+		<axis xyz="0 0 1"/>
+		<parent link="b0"/>
+		<child link="b1"/>
+	</joint>
+
+	<link name="b2">
+        <inertial>
+            <origin rpy="0 0 0" xyz="0.5 0 0"/>
+            <mass value="1"/>
+            <inertia ixx="1" ixy="0" ixz="0" iyy="2" iyz="0" izz="3"/>
+        </inertial>
+		<visual>
+			<origin rpy="0 0 0" xyz="0.5 0 0"/>
+			<geometry>
+				<box size="1 0.1 0.1"/>
+			</geometry>
+			<material name="white"/>
+		</visual>
+	</link>
+
+	<joint name="j2" type="continuous">
+		<axis xyz="0 0 1"/>
+		<parent link="b1"/>
+		<child link="b2"/>
+		<origin rpy="0 0 0" xyz="1 0 0"/>
+	</joint>
+
+	<link name="b3">
+        <inertial>
+            <origin rpy="0 0 0" xyz="0 -0.5 0"/>
+            <mass value="1"/>
+            <inertia ixx="1" ixy="0" ixz="0" iyy="2" iyz="0" izz="3"/>
+        </inertial>
+		<visual>
+			<origin rpy="0 0 0" xyz="0 -0.5 0"/>
+			<geometry>
+				<box size="0.1 1 0.1"/>
+			</geometry>
+			<material name="black"/>
+		</visual>
+	</link>
+
+	<joint name="j3" type="continuous">
+		<axis xyz="0 0 1"/>
+		<parent link="b2"/>
+		<child link="b3"/>
+		<origin rpy="0 0 0" xyz="0.5 0 0"/>
+	</joint>
+
+	<link name="b4">
+        <inertial>
+            <origin rpy="0 0 0" xyz="0.5 0 0"/>
+            <mass value="1"/>
+            <inertia ixx="1" ixy="0" ixz="0" iyy="2" iyz="0" izz="3"/>
+        </inertial>
+		<visual>
+			<origin rpy="0 0 0" xyz="0.5 0 0"/>
+			<geometry>
+				<box size="1 0.1 0.1"/>
+			</geometry>
+			<material name="white"/>
+		</visual>
+	</link>
+
+	<joint name="j4" type="continuous">
+		<axis xyz="0 0 1"/>
+		<parent link="b3"/>
+		<child link="b4"/>
+		<origin rpy="0 0 0" xyz="0 -1 0"/>
+	</joint>
+
+    <!--<link name="ee_b4">-->
+        <!--<inertial>-->
+            <!--<mass value="0"/>-->
+            <!--<inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0"/>-->
+        <!--</inertial>-->
+        <!--<visual>-->
+            <!--<origin rpy="0 0 0" xyz="0 0 0"/>-->
+            <!--<geometry>-->
+                <!--<box size="0.01 0.01 0.01"/>-->
+            <!--</geometry>-->
+            <!--<material name="black"/>-->
+        <!--</visual>-->
+    <!--</link>-->
+
+    <!--<joint name="ee_j4" type="fixed">-->
+        <!--<origin rpy="0 0 0" xyz="1 0 0"/>-->
+        <!--<parent link="b4"/>-->
+        <!--<child link="ee_b4"/>-->
+    <!--</joint>-->
+
+	<link name="b5">
+        <inertial>
+            <origin rpy="0 0 0" xyz="0.5 0 0"/>
+            <mass value="1"/>
+            <inertia ixx="1" ixy="0" ixz="0" iyy="2" iyz="0" izz="3"/>
+        </inertial>
+		<visual>
+			<origin rpy="0 0 0" xyz="0.5 0 0"/>
+			<geometry>
+				<box size="1 0.1 0.1"/>
+			</geometry>
+			<material name="black"/>
+		</visual>
+	</link>
+
+	<joint name="j5" type="continuous">
+		<origin rpy="0 0 0" xyz="1 0 0"/>
+		<axis xyz="0 0 1"/>
+		<parent link="b2"/>
+		<child link="b5"/>
+	</joint>
+
+    <!--<link name="ee_b5">-->
+        <!--<inertial>-->
+            <!--<mass value="0"/>-->
+            <!--<inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0"/>-->
+        <!--</inertial>-->
+        <!--<visual>-->
+            <!--<origin rpy="0 0 0" xyz="0 0 0"/>-->
+            <!--<geometry>-->
+                <!--<box size="0.01 0.01 0.01"/>-->
+            <!--</geometry>-->
+            <!--<material name="white"/>-->
+        <!--</visual>-->
+    <!--</link>-->
+
+    <!--<joint name="ee_j5" type="fixed">-->
+        <!--<origin rpy="0 0 0" xyz="1 0 0"/>-->
+        <!--<parent link="b5"/>-->
+        <!--<child link="ee_b5"/>-->
+    <!--</joint>-->
+
+</robot>
