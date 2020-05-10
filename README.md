@@ -1,4 +1,4 @@
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.3819591.svg)](https://doi.org/10.5281/zenodo.3819591)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.3819602.svg)](https://doi.org/10.5281/zenodo.3819602)
 
 # tf_rbdl
 tf_rbdl is a python library that contains some essential rigid body dynamics
