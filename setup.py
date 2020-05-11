@@ -18,7 +18,7 @@ URL = 'https://github.com/junhyeokahn/tf_rbdl'
 EMAIL = 'junhyeokahn91@gmail.com'
 AUTHOR = 'Junhyeok Ahn'
 REQUIRES_PYTHON = '>=3.6.0'
-VERSION = '1.1.2'
+VERSION = '1.1.0'
 
 # What packages are required for this module to be executed?
 REQUIRED = [
