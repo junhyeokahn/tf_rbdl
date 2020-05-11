@@ -106,7 +106,8 @@ def general_usage(xml_path,ee_list,N):
 
 if __name__ == "__main__":
     # tf.config.experimental_run_functions_eagerly(True)
-    general_usage(os.getcwd()+'/examples/assets/two_link_manipulator.xml', ['ee_b2'], 2000)
-    general_usage(os.getcwd()+'/examples/assets/five_link_manipulator.xml', ['ee_b4', 'ee_b5'], 2000)
-    general_usage(os.getcwd()+'/examples/assets/my_hopper.xml', ['foot_sole'], 2000)
+    general_usage(os.getcwd()+'/examples/assets/my_reacher.xml', ['finger'], 2000)
+    # general_usage(os.getcwd()+'/examples/assets/two_link_manipulator.xml', ['ee_b2'], 1)
+    # general_usage(os.getcwd()+'/examples/assets/five_link_manipulator.xml', ['ee_b4', 'ee_b5'], 2000)
+    # general_usage(os.getcwd()+'/examples/assets/my_hopper.xml', ['foot_sole'], 2000)
     # tf.config.experimental_run_functions_eagerly(False)

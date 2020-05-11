@@ -31,6 +31,7 @@ def initial_config_from_mjcf(file, ee_list, verbose=False):
         mjcf file
     ee_list (list of str):
         End-effector body names
+
     Returns
     -------
     ret (dict):
@@ -60,13 +61,6 @@ def initial_config_from_mjcf(file, ee_list, verbose=False):
         Glist (tf.Tensor):
             Spatial inertia matrices Gi of the links.
             (nbody,6,6)
-        # j_st_id (tf.Tensor):
-            # Start joint idx for each link. It handles multiple joints in one
-            # body. Last element is nq.
-            # (nbody+1,)
-        # b_id (tf.Tensor):
-            # Body idx for each joint.
-            # (nq,)
         pidlist (tf.Tensor):
             Parent body index.
             (nbody,)
@@ -158,15 +152,12 @@ def initial_config_from_mjcf(file, ee_list, verbose=False):
         ret['actuator_gear'] = tf.convert_to_tensor(sim.model.actuator_gear[:,0], tf.float32)
     ret['g'] = tf.convert_to_tensor(sim.model.opt.gravity, tf.float32)
     ret['pidlist'] = tf.convert_to_tensor(sim.model.body_parentid[muj_body_id]-1, tf.int32)
-    # ret['j_st_id'] = [None]*(nbody+1)
-    # ret['j_st_id'][nbody] = nq
     ret['Mlist'] = [None]*nbody
     ret['Glist'] = [None]*nbody
     for i in range(nbody):
         muj_id = muj_body_id[i]
         muj_pid = sim.model.body_parentid[muj_id]
-        # ret['j_st_id'][i] = sim.model.body_jntadr[muj_id]
-        rel_pos = np.dot(muj_global_inertial_SO3[muj_pid], muj_global_inertial_pos[muj_id] - muj_global_inertial_pos[muj_pid])
+        rel_pos = np.dot(muj_global_inertial_SO3[muj_pid].T, muj_global_inertial_pos[muj_id] - muj_global_inertial_pos[muj_pid])
         rel_SO3 = np.dot(muj_global_inertial_SO3[muj_pid].T, muj_global_inertial_SO3[muj_id])
         rel_SE3 = tf.squeeze(Rp_to_SE3(tf.expand_dims(tf.convert_to_tensor(rel_SO3,tf.float32),0), tf.expand_dims(tf.convert_to_tensor(rel_pos,tf.float32),0)), 0)
         ret['Mlist'][i] = rel_SE3
@@ -177,14 +168,11 @@ def initial_config_from_mjcf(file, ee_list, verbose=False):
         Gi[0:3,0:3] = G
         Gi[3:6,3:6] = mI
         ret['Glist'][i] = tf.convert_to_tensor(Gi, tf.float32)
-    # ret['j_st_id'] = tf.stack(ret['j_st_id'],0)
     ret['Mlist'] = tf.stack(ret['Mlist'],0)
     ret['Glist'] = tf.stack(ret['Glist'],0)
 
-    # ret['b_id'] = [None]*nq
     ret['Slist'] = [None]*nq
     for i in range(nq):
-        # ret['b_id'][i] = muj_body_id.index(sim.model.jnt_bodyid[i])
         R = muj_global_joint_SO3[i]
         p = muj_global_joint_pos[i]
         Tsj = Rp_to_SE3(tf.expand_dims(tf.convert_to_tensor(R,tf.float32),0), tf.expand_dims(tf.convert_to_tensor(p,tf.float32),0))
@@ -198,7 +186,6 @@ def initial_config_from_mjcf(file, ee_list, verbose=False):
         screw_axis = tf.expand_dims(tf.convert_to_tensor(screw_axis, tf.float32),axis=1)
         S = tf.squeeze(tf.matmul(adTsj, screw_axis),1)
         ret['Slist'][i] = S
-    # ret['b_id'] = tf.stack(ret['b_id'],0)
     ret['Slist'] = tf.stack(ret['Slist'],0)
 
     ret['init_ee_SE3'] = dict()
