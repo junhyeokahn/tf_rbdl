@@ -25,16 +25,15 @@ $ pip install -e .
 
 ## Citation
 ```
-@misc{junhyeok_ahn_2020_3780707,
+@misc{junhyeok_ahn_2020_3820491,
   author       = {Junhyeok Ahn},
-  title        = {{tf\_rbdl: Rigid Body Dynamics Library using 
-                   Tensorflow}},
+  title        = {junhyeokahn/tf\_rbdl: tf\_rbdl-v1.1.0},
   month        = may,
   year         = 2020,
   publisher    = {Zenodo},
-  version      = {v0.1.0},
-  doi          = {10.5281/zenodo.3780707},
-  url          = {https://doi.org/10.5281/zenodo.3780707}
+  version      = {v1.1.0},
+  doi          = {10.5281/zenodo.3820491},
+  url          = {https://doi.org/10.5281/zenodo.3820491}
 }
 ```
 
