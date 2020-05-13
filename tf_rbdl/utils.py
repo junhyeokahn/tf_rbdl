@@ -35,11 +35,15 @@ def initial_config_from_mjcf(file, ee_list, verbose=False):
     Returns
     -------
     ret (dict):
-        dt (tf.Tensor)
+        nq (tf.Tensor)
+            Number of joint
+        S (tf.Tensor):
+            Selection Matrix. This includes actuator gear.
+            (1,nu, nq)
+        dt (tf.Tensor):
+            Timestep
         joint_armature (tf.Tensor):
             (nq,)
-        actuator_gear (tf.Tensor):
-            (nu,)
         g (tf.Tensor): Gravity
         Mlist (tf.Tensor):
             Link frame i relative to p(i) at the home position
@@ -57,7 +61,7 @@ def initial_config_from_mjcf(file, ee_list, verbose=False):
             List of the jonit index related to the end-effector branch
             (nq_branch,)
         init_ee_SE3 (dict of tf.Tensor):
-            4x4
+            (4,4)
         Glist (tf.Tensor):
             Spatial inertia matrices Gi of the links.
             (nbody,6,6)
@@ -76,7 +80,7 @@ def initial_config_from_mjcf(file, ee_list, verbose=False):
     sim.set_state(sim_state)
     sim.forward()
 
-    nq, nv, na = sim.model.nq, sim.model.nv, sim.model.nu
+    nq, nv, nu = sim.model.nq, sim.model.nv, sim.model.nu
     n_ee = len(ee_list)
     njoint, nbody = sim.model.njnt, sim.model.nbody-n_ee-1
 
@@ -85,8 +89,13 @@ def initial_config_from_mjcf(file, ee_list, verbose=False):
     assert nq == njoint
     assert nq == nbody
 
+    S = None
+    if nu is not 0:
+        S = np.zeros((1,nu,nq))
+        S[0,0:nu, nq-nu:nq] = np.diag(sim.model.actuator_gear[:,0])
+
     muj_world_id = 0
-    muj_ee_id, muj_body_id = [], []
+    muj_ee_id, muj_body_id, muj_body_name = [], [], []
     muj_global_body_pos, muj_global_body_SO3 = np.zeros((sim.model.nbody, 3)), np.zeros((sim.model.nbody, 3, 3))
     muj_global_joint_pos, muj_global_joint_SO3 = np.zeros((sim.model.nq, 3)), np.zeros((sim.model.nq, 3, 3))
     muj_global_body_SO3[0] = np.eye(3)
@@ -98,6 +107,7 @@ def initial_config_from_mjcf(file, ee_list, verbose=False):
             muj_ee_id.append(sim.model.body_name2id(sim.model.body_names[i]))
         else:
             muj_body_id.append(i)
+            muj_body_name.append(sim.model.body_names[i])
         muj_global_body_SO3[i] = sim.data.get_body_xmat(sim.model.body_names[i])
         muj_global_body_pos[i] = sim.data.get_body_xpos(sim.model.body_names[i])
         muj_global_inertial_pos[i] = muj_global_body_pos[i] + sim.model.body_ipos[i]
@@ -146,12 +156,22 @@ def initial_config_from_mjcf(file, ee_list, verbose=False):
             print(Bidlist[ee])
         print("="*80)
 
+    ret['nq'] = tf.convert_to_tensor(nq, tf.int32)
+    if S is None:
+        ret['S'] = None
+    else:
+        ret['S'] = tf.convert_to_tensor(S, tf.float32)
     ret['dt'] = tf.convert_to_tensor(sim.model.opt.timestep, tf.float32)
     ret['joint_armature'] = tf.convert_to_tensor(sim.model.dof_armature, tf.float32)
-    if na is not 0:
-        ret['actuator_gear'] = tf.convert_to_tensor(sim.model.actuator_gear[:,0], tf.float32)
     ret['g'] = tf.convert_to_tensor(sim.model.opt.gravity, tf.float32)
-    ret['pidlist'] = tf.convert_to_tensor(sim.model.body_parentid[muj_body_id]-1, tf.int32)
+    pidlist = []
+    for i in range(nbody):
+        pname = sim.model.body_names[sim.model.body_parentid[sim.model.body_name2id(muj_body_name[i])]]
+        if pname == "world":
+            pidlist.append(-1)
+        else:
+            pidlist.append(muj_body_name.index(pname))
+    ret['pidlist'] = tf.convert_to_tensor(np.array(pidlist), tf.int32)
     ret['Mlist'] = [None]*nbody
     ret['Glist'] = [None]*nbody
     for i in range(nbody):
@@ -225,9 +245,3 @@ def initial_config_from_mjcf(file, ee_list, verbose=False):
         print("="*80)
 
     return ret
-
-if __name__ == "__main__":
-    # initial_config_from_mjcf(os.getcwd()+'/examples/assets/two_link_manipulator.xml', ['ee_b2'])
-    # initial_config_from_mjcf(os.getcwd()+'/examples/assets/five_link_manipulator.xml', ['ee_b5', 'ee_b4'])
-    initial_config_from_mjcf(os.getcwd()+'/examples/assets/my_hopper.xml', ['foot_sole'])
-    # initial_config_from_mjcf(os.getcwd()+'/examples/assets/humanoid.xml', ['foot_sole'])

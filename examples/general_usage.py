@@ -104,10 +104,13 @@ def general_usage(xml_path,ee_list,N):
         assert np.allclose(M_mujoco[i], M_tf_rbdl[i].numpy(),atol=1e-04), "Mujoco\n{}\ntf_rbdl\n{}\nComparison\n{}".format(M_mujoco[i], M_tf_rbdl[i].numpy(), np.isclose(M_mujoco[i], M_tf_rbdl[i].numpy()))
         assert np.allclose(qfrc_bias_mujoco[i], qfrc_bias_tf_rbdl[i].numpy(),atol=1e-04), "Mujoco\n{}\ntf_rbdl\n{}\nComparison\n{}".format(qfrc_bias_mujoco[i], qfrc_bias_tf_rbdl[i].numpy(), np.isclose(qfrc_bias_mujoco[i], qfrc_bias_tf_rbdl[i].numpy()))
 
+    print("[PASSED]")
+
 if __name__ == "__main__":
     # tf.config.experimental_run_functions_eagerly(True)
     general_usage(os.getcwd()+'/examples/assets/my_reacher.xml', ['finger'], 2000)
-    # general_usage(os.getcwd()+'/examples/assets/two_link_manipulator.xml', ['ee_b2'], 1)
-    # general_usage(os.getcwd()+'/examples/assets/five_link_manipulator.xml', ['ee_b4', 'ee_b5'], 2000)
-    # general_usage(os.getcwd()+'/examples/assets/my_hopper.xml', ['foot_sole'], 2000)
+    general_usage(os.getcwd()+'/examples/assets/two_link_manipulator.xml', ['ee_b2'], 1)
+    general_usage(os.getcwd()+'/examples/assets/five_link_manipulator.xml', ['ee_b4', 'ee_b5'], 2000)
+    general_usage(os.getcwd()+'/examples/assets/my_hopper.xml', ['foot_toe', 'foot_heel'], 2000)
+    general_usage(os.getcwd()+'/examples/assets/my_half_cheetah.xml', ['ffoot_sole', 'bfoot_sole'], 2000)
     # tf.config.experimental_run_functions_eagerly(False)

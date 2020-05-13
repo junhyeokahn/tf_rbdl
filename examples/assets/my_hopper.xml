@@ -1,4 +1,5 @@
 <mujoco model="hopper">
+    <include file="./common/materials.xml"/>
     <compiler angle="degree" coordinate="global" inertiafromgeom="true"/>
     <default>
         <joint armature="1" damping="1" limited="true"/>
@@ -31,9 +32,13 @@
                             <body name="foot" pos="0.065 0 0.1">
                                 <joint axis="0 -1 0" name="foot_joint" pos="0 0 0.1" range="-45 45" type="hinge"/>
                                 <geom friction="2.0" fromto="-0.13 0 0.1 0.26 0 0.1" name="foot_geom" size="0.06" type="capsule"/>
-                                <body name="foot_sole" pos="0.065 0 0.04">
-                                    <!--<geom name="foot_sole" pos="0.065 0 0.04" type="sphere" size=".01" material="effector"/>-->
-                                    <inertial pos="0.065 0 0.04" quat="1 0 0 0" mass="0" diaginertia="0 0 0"/>
+                                <body name="foot_toe" pos="0.26 0 0.04">
+                                    <!--<geom name="foot_toe" pos="0.26 0 0.04" type="sphere" size=".01" material="effector"/>-->
+                                    <inertial pos="0.26 0 0.04" quat="1 0 0 0" mass="0" diaginertia="0 0 0"/>
+                                </body>
+                                <body name="foot_heel" pos="-0.13 0 0.04">
+                                    <!--<geom name="foot_heel" pos="-0.13 0 0.04" type="sphere" size=".01" material="effector"/>-->
+                                    <inertial pos="-0.13 0 0.04" quat="1 0 0 0" mass="0" diaginertia="0 0 0"/>
                                 </body>
                             </body>
                         </body>
