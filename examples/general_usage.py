@@ -100,11 +100,15 @@ def general_usage(xml_path,ee_list,N):
     for i in range(N):
         for ee in ee_list:
             assert np.allclose(ee_SE3_mujoco[ee][i], ee_SE3_tf_rbdl[ee][i].numpy(),atol=1e-04), "Mujoco\n{}\ntf_rbdl\n{}\nComparison\n{}".format(ee_SE3_mujoco[ee][i], ee_SE3_tf_rbdl[ee][i].numpy(), np.isclose(ee_SE3_mujoco[ee][i], ee_SE3_tf_rbdl[ee][i].numpy()))
+            # print("[{} SE3] PASSED]".format(ee))
             assert np.allclose(ee_jac_mujoco[ee][i], ee_jac_tf_rbdl[ee][i].numpy(),atol=1e-04), "Mujoco\n{}\ntf_rbdl\n{}\nComparison\n{}".format(ee_jac_mujoco[ee][i], ee_jac_tf_rbdl[ee][i].numpy(), np.isclose(ee_jac_mujoco[ee][i], ee_jac_tf_rbdl[ee][i].numpy()))
+            # print("[{} Jacobian] PASSED]".format(ee))
         assert np.allclose(M_mujoco[i], M_tf_rbdl[i].numpy(),atol=1e-04), "Mujoco\n{}\ntf_rbdl\n{}\nComparison\n{}".format(M_mujoco[i], M_tf_rbdl[i].numpy(), np.isclose(M_mujoco[i], M_tf_rbdl[i].numpy()))
+        # print("[Mass Matrix] PASSED]")
         assert np.allclose(qfrc_bias_mujoco[i], qfrc_bias_tf_rbdl[i].numpy(),atol=1e-04), "Mujoco\n{}\ntf_rbdl\n{}\nComparison\n{}".format(qfrc_bias_mujoco[i], qfrc_bias_tf_rbdl[i].numpy(), np.isclose(qfrc_bias_mujoco[i], qfrc_bias_tf_rbdl[i].numpy()))
-
+        # print("[Coriolis + Gravity] PASSED]")
     print("[PASSED]")
+
 
 if __name__ == "__main__":
     # tf.config.experimental_run_functions_eagerly(True)
@@ -113,4 +117,5 @@ if __name__ == "__main__":
     general_usage(os.getcwd()+'/examples/assets/five_link_manipulator.xml', ['ee_b4', 'ee_b5'], 2000)
     general_usage(os.getcwd()+'/examples/assets/my_hopper.xml', ['foot_toe', 'foot_heel'], 2000)
     general_usage(os.getcwd()+'/examples/assets/my_half_cheetah.xml', ['ffoot_sole', 'bfoot_sole'], 2000)
+    general_usage(os.getcwd()+'/examples/assets/my_humanoid.xml', ['right_foot', 'left_foot', 'right_finger', 'left_finger'], 2000)
     # tf.config.experimental_run_functions_eagerly(False)

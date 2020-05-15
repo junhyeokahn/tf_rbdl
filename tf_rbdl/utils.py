@@ -226,10 +226,10 @@ def initial_config_from_mjcf(file, ee_list, verbose=False):
             Tbs = tf.squeeze(SE3_inv(tf.expand_dims(Tsb,0)))
             Tbj = tf.matmul(Tbs,Tsj)
             adTbj = tf.squeeze(adjoint(tf.expand_dims(Tbj,0)),0)
-            if sim.model.jnt_type[i] == 2:
-                screw_axis = np.concatenate([np.zeros(3), sim.model.jnt_axis[i]], axis=0)
-            elif sim.model.jnt_type[i] == 3:
-                screw_axis = np.concatenate([sim.model.jnt_axis[i], np.zeros(3)], axis=0)
+            if sim.model.jnt_type[id] == 2:
+                screw_axis = np.concatenate([np.zeros(3), sim.model.jnt_axis[id]], axis=0)
+            elif sim.model.jnt_type[id] == 3:
+                screw_axis = np.concatenate([sim.model.jnt_axis[id], np.zeros(3)], axis=0)
             else:
                 raise ValueError("Wrong Joint Type")
             screw_axis = tf.expand_dims(tf.convert_to_tensor(screw_axis, tf.float32),axis=1)
