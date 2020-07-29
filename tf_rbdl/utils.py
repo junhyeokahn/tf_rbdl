@@ -37,6 +37,8 @@ def initial_config_from_mjcf(file, ee_list, verbose=False):
     ret (dict):
         nq (tf.Tensor)
             Number of joint
+        nu (tf.Tensor)
+            Number of input
         S (tf.Tensor):
             Selection Matrix. This includes actuator gear.
             (1,nu, nq)
@@ -157,6 +159,7 @@ def initial_config_from_mjcf(file, ee_list, verbose=False):
         print("="*80)
 
     ret['nq'] = tf.convert_to_tensor(nq, tf.int32)
+    ret['nu'] = tf.convert_to_tensor(nu, tf.int32)
     if S is None:
         ret['S'] = None
     else:
